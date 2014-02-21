@@ -18104,7 +18104,7 @@ Putting 1 is equivalent to putting 0 and calling Ln() just after. Default value:
 							// inherit column width
 							$cellw = 0;
 							for ($i = 0; $i < $colspan; ++$i) {
-								$cellw += $table_colwidths[($colid + $i)];
+								$cellw += isset($table_colwidths[($colid + $i)])?$table_colwidths[($colid + $i)]:0;
 							}
 						}
 						$cellw += (($colspan - 1) * $cellspacing['H']);
