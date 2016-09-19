@@ -912,9 +912,14 @@ class TCPDFBarcode {
 			// add leading zero if code-length is odd
 			$code = '0'.$code;
 		}
+		
 		// add start and stop codes
 		$code = 'AA'.strtolower($code).'ZA';
-
+		
+                $cleanCode = str_replace(array('AA', 'ZA'), '', $code);
+                
+		$bararray = array('code' => $cleanCode, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
+		
 		$bararray = array('code' => $code, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
 		$k = 0;
 		$clen = strlen($code);
