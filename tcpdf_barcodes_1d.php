@@ -912,9 +912,14 @@ class TCPDFBarcode {
 			// add leading zero if code-length is odd
 			$code = '0'.$code;
 		}
+		
 		// add start and stop codes
 		$code = 'AA'.strtolower($code).'ZA';
-
+		
+                $cleanCode = str_replace(array('AA', 'ZA'), '', $code);
+                
+		$bararray = array('code' => $cleanCode, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
+		
 		$bararray = array('code' => $code, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
 		$k = 0;
 		$clen = strlen($code);
@@ -1360,11 +1365,16 @@ class TCPDFBarcode {
 			// wrong checkdigit
 			return false;
 		}
+		
 		if ($len == 12) {
+                    
 			// UPC-A
-			$code = '0'.$code;
+			$upca = true;
+                        $code = '0'.$code;
 			++$len;
+                        
 		}
+		
 		if ($upce) {
 			// convert UPC-A to UPC-E
 			$tmp = substr($code, 4, 3);
@@ -1464,14 +1474,27 @@ class TCPDFBarcode {
 		$k = 0;
 		$seq = '101'; // left guard bar
 		if ($upce) {
-			$bararray = array('code' => $upce_code, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
+			$clean_code = substr($upce_code, 1);
+			$bararray = array('code' => $clean_code, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
 			$p = $upce_parities[$code[1]][$r];
 			for ($i = 0; $i < 6; ++$i) {
 				$seq .= $codes[$p[$i]][$upce_code{$i}];
 			}
 			$seq .= '010101'; // right guard bar
 		} else {
-			$bararray = array('code' => $code, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
+			
+			if($upca === true) {
+                            
+                            $clean_code = substr($code, 1);
+                            
+                        } else {
+                            
+                            $clean_code = $code;
+                            
+                        }
+                        
+			$bararray = array('code' => $clean_code, 'maxw' => 0, 'maxh' => 1, 'bcode' => array());
+			
 			$half_len = intval(ceil($len / 2));
 			if ($len == 8) {
 				for ($i = 0; $i < $half_len; ++$i) {
