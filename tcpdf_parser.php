@@ -186,6 +186,8 @@ class TCPDF_PARSER {
 		} else {
 			$this->Error('Unable to find startxref');
 		}
+		unset($matches);
+
 		// check xref position
 		if (strpos($this->pdfdata, 'xref', $startxref) == $startxref) {
 			// Cross-Reference
@@ -236,7 +238,9 @@ class TCPDF_PARSER {
 				// object number (index)
 				$obj_num = intval($matches[1][0]);
 			}
+			unset($matches);
 		}
+
 		// get trailer data
 		if (preg_match('/trailer[\s]*<<(.*)>>/isU', $this->pdfdata, $matches, PREG_OFFSET_CAPTURE, $offset) > 0) {
 			$trailer_data = $matches[1][0];
@@ -262,9 +266,12 @@ class TCPDF_PARSER {
 					$xref['trailer']['id'][1] = $matches[2];
 				}
 			}
+			unset($matches);
+
 			if (preg_match('/Prev[\s]+([0-9]+)/i', $trailer_data, $matches) > 0) {
 				// get previous xref
 				$xref = $this->getXrefData(intval($matches[1]), $xref);
+				unset($matches);
 			}
 		} else {
 			$this->Error('Unable to find trailer');
@@ -519,6 +526,7 @@ class TCPDF_PARSER {
 				if (preg_match('/^([^\x00\x09\x0a\x0c\x0d\x20\s\x28\x29\x3c\x3e\x5b\x5d\x7b\x7d\x2f\x25]+)/', substr($this->pdfdata, $offset, 256), $matches) == 1) {
 					$objval = $matches[1]; // unescaped value
 					$offset += strlen($objval);
+					unset($matches);
 				}
 				break;
 			}
@@ -598,13 +606,14 @@ class TCPDF_PARSER {
 					// hexadecimal string object
 					$objtype = $char;
 					++$offset;
-					if (($char == '<') AND (preg_match('/^([0-9A-Fa-f\x09\x0a\x0c\x0d\x20]+)>/iU', substr($this->pdfdata, $offset), $matches) == 1)) {
+					if (($char == '<') AND (preg_match('/^([0-9A-Fa-f\x09\x0a\x0c\x0d\x20]+)>/iU', $this->pdfdata, $matches, 0, $offset) == 1)) {
 						// remove white space characters
 						$objval = strtr($matches[1], "\x09\x0a\x0c\x0d\x20", '');
 						$offset += strlen($matches[0]);
+						unset($matches);
 					} elseif (($endpos = strpos($this->pdfdata, '>', $offset)) !== FALSE) {
 						$offset = $endpos + 1;
-                    }
+					}
 				}
 				break;
 			}
@@ -632,11 +641,13 @@ class TCPDF_PARSER {
 					// start stream object
 					$objtype = 'stream';
 					$offset += 6;
-					if (preg_match('/^([\r]?[\n])/isU', substr($this->pdfdata, $offset), $matches) == 1) {
+					if (preg_match('/^([\r]?[\n])/isU', $this->pdfdata, $matches, 0, $offset) == 1) {
 						$offset += strlen($matches[0]);
-						if (preg_match('/(endstream)[\x09\x0a\x0c\x0d\x20]/isU', substr($this->pdfdata, $offset), $matches, PREG_OFFSET_CAPTURE) == 1) {
+						unset($matches);
+						if (preg_match('/(endstream)[\x09\x0a\x0c\x0d\x20]/isU', $this->pdfdata, $matches, PREG_OFFSET_CAPTURE, $offset) == 1) {
 							$objval = substr($this->pdfdata, $offset, $matches[0][1]);
 							$offset += $matches[1][1];
+							unset($matches);
 						}
 					}
 				} elseif (substr($this->pdfdata, $offset, 9) == 'endstream') {
@@ -648,11 +659,13 @@ class TCPDF_PARSER {
 					$objtype = 'objref';
 					$offset += strlen($matches[0]);
 					$objval = intval($matches[1]).'_'.intval($matches[2]);
+					unset($matches);
 				} elseif (preg_match('/^([0-9]+)[\s]+([0-9]+)[\s]+obj/iU', substr($this->pdfdata, $offset, 33), $matches) == 1) {
 					// object start
 					$objtype = 'obj';
 					$objval = intval($matches[1]).'_'.intval($matches[2]);
 					$offset += strlen ($matches[0]);
+					unset($matches);
 				} elseif (($numlen = strspn($this->pdfdata, '+-.0123456789', $offset)) > 0) {
 					// numeric object
 					$objtype = 'numeric';
@@ -694,7 +707,7 @@ class TCPDF_PARSER {
 		$i = 0; // object main index
 		do {
 			$oldoffset = $offset;
-                        // get element
+			// get element
 			$element = $this->getRawObject($offset);
 			$offset = $element[2];
 			// decode stream using stream's dictionary information
