@@ -109,6 +109,7 @@ class TCPDF_PARSER {
 		}
 		// get PDF content string
 		$this->pdfdata = substr($data, $trimpos);
+		unset($data);
 		// get length
 		$pdflen = strlen($this->pdfdata);
 		// set configuration parameters
@@ -598,13 +599,15 @@ class TCPDF_PARSER {
 					// hexadecimal string object
 					$objtype = $char;
 					++$offset;
-					if (($char == '<') AND (preg_match('/^([0-9A-Fa-f\x09\x0a\x0c\x0d\x20]+)>/iU', substr($this->pdfdata, $offset), $matches) == 1)) {
-						// remove white space characters
-						$objval = strtr($matches[1], "\x09\x0a\x0c\x0d\x20", '');
-						$offset += strlen($matches[0]);
-					} elseif (($endpos = strpos($this->pdfdata, '>', $offset)) !== FALSE) {
-						$offset = $endpos + 1;
-                    }
+					if (($endpos = strpos($this->pdfdata, '>', $offset)) !== FALSE) {
+						if (($char == '<') AND (preg_match('/^([0-9A-Fa-f\x09\x0a\x0c\x0d\x20]+)>/iU', substr($this->pdfdata, $offset, $endpos - $offset + 1), $matches) == 1)) {
+							// remove white space characters
+							$objval = strtr($matches[1], "\x09\x0a\x0c\x0d\x20", '');
+							$offset += strlen($matches[0]);
+						} else {
+							$offset = $endpos + 1;
+						}
+					}
 				}
 				break;
 			}
@@ -632,11 +635,11 @@ class TCPDF_PARSER {
 					// start stream object
 					$objtype = 'stream';
 					$offset += 6;
-					if (preg_match('/^([\r]?[\n])/isU', substr($this->pdfdata, $offset), $matches) == 1) {
+					if (preg_match('/^([\r]?[\n])/isU', substr($this->pdfdata, $offset, 4), $matches) == 1) {
 						$offset += strlen($matches[0]);
-						if (preg_match('/(endstream)[\x09\x0a\x0c\x0d\x20]/isU', substr($this->pdfdata, $offset), $matches, PREG_OFFSET_CAPTURE) == 1) {
-							$objval = substr($this->pdfdata, $offset, $matches[0][1]);
-							$offset += $matches[1][1];
+						if (preg_match('/(endstream)[\x09\x0a\x0c\x0d\x20]/isU', $this->pdfdata, $matches, PREG_OFFSET_CAPTURE, $offset) == 1) {
+							$objval = substr($this->pdfdata, $offset, $matches[0][1] - $offset);
+							$offset = $matches[1][1];
 						}
 					}
 				} elseif (substr($this->pdfdata, $offset, 9) == 'endstream') {
@@ -694,7 +697,7 @@ class TCPDF_PARSER {
 		$i = 0; // object main index
 		do {
 			$oldoffset = $offset;
-                        // get element
+			// get element
 			$element = $this->getRawObject($offset);
 			$offset = $element[2];
 			// decode stream using stream's dictionary information
