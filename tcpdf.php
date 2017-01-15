@@ -6988,7 +6988,7 @@ class TCPDF {
 			// create temp alpha file
 			$tempfile_alpha = K_PATH_CACHE.'__tcpdf_'.$this->file_id.'_imgmask_alpha_'.$filehash;
 			// check for cached images
-			if (in_array($tempfile_plain, $this->imagekeys)) {
+			if (in_array($tempfile_plain, $this->imagekeys) && file_exists($tempfile_plain)) {
 				// get existing image data
 				$info = $this->getImageBuffer($tempfile_plain);
 				// check if the newer image is larger
